@@ -66,13 +66,15 @@ if uploaded_file:
         max_lag_y = st.number_input("Max lags for dependent variable", min_value=1, max_value=10, value=1)
         max_lags_x = {x: st.number_input(f"Max lags for {x}", min_value=0, max_value=10, value=1) for x in xcols}
 
-        try:
-            ardl_model = ARDL(endog=df[ycol], lags=max_lag_y, exog=df[xcols], exog_lags=max_lags_x).fit()
-            st.text(ardl_model.summary())
+    from statsmodels.tsa.ardl import ARDL
 
-            if st.button("Export Results"):
-                with open("ARDL_summary.txt", "w") as f:
-                    f.write(str(ardl_model.summary()))
-                st.success("ARDL summary saved to ARDL_summary.txt")
-        except Exception as e:
-            st.error(f"ARDL estimation failed: {e}")
+try:
+    # Auto ARDL formula (simplified, for one dependent and multiple exogenous)
+    ardl_formula = f"{ycol} ~ " + " + ".join([f"L1.{col}" for col in xcols])
+    ardl_model = ARDL.from_formula(ardl_formula, data=df, lags=2)
+    ardl_res = ardl_model.fit()
+    st.subheader("ARDL Model Summary")
+    st.text(ardl_res.summary())
+except Exception as e:
+    st.warning(f"ARDL estimation failed: {e}")
+
