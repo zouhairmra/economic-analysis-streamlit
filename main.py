@@ -92,6 +92,15 @@ h1, h2, h3 {
 }
 </style>
 """, unsafe_allow_html=True)
+st.markdown("""
+<div class="navbar">
+    DataStatPro Clone
+    <a href='#home'>Home</a>
+    <a href='#upload'>Upload</a>
+    <a href='#analysis'>Analysis</a>
+    <a href='#export'>Export</a>
+</div>
+""", unsafe_allow_html=True)
 
 # Simulated top navigation bar
 st.markdown("""
