@@ -7,4 +7,5 @@ uploaded = st.file_uploader("Upload CSV", type="csv")
 if uploaded:
     df = pd.read_csv(uploaded)
     st.write(df.describe())
-    st.plotly_chart(px.imshow(df.corr(), text_auto=True))
+    numeric_df = df.select_dtypes(include='number')
+st.plotly_chart(px.imshow(numeric_df.corr(), text_auto=True))
