@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 import plotly.express as px
-df['year'] = pd.to_numeric(df['year'], errors='coerce')
 st.header("Forecasting")
 uploaded = st.file_uploader("Upload CSV with year + target", type="csv")
 if uploaded:
