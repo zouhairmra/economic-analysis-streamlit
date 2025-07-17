@@ -49,24 +49,9 @@ if uploaded_file is not None:
             st.subheader("ARDL Estimation")
 
             try:
-                # Use ardl_select_order to find optimal lag structure
-                ardl_selected = ardl_select_order(
+                # Automatically select best lags using AIC
+                selected_ardl = ardl_select_order(
                     endog=data[ycol],
                     exog=data[xcols],
-                    maxlag=4,
-                    ic="aic",
-                    trend="n"
-                )
-
-                ardl_model = ardl_selected.model.fit()
-                st.text("ARDL Model Summary")
-                st.text(ardl_model.summary())
-
-                # Plot residuals
-                fig, ax = plt.subplots()
-                ax.plot(ardl_model.resid)
-                ax.set_title("ARDL Residuals")
-                st.pyplot(fig)
-
-            except Exception as e:
-                st.error(f"ARDL estimation failed: {e}")
+                    maxlag=4,         # Max lag for dependent variable
+                    maxorder=4,       #
