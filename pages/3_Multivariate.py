@@ -2,9 +2,9 @@
 
 import streamlit as st
 import pandas as pd
-import statsmodels.api as sm
-from statsmodels.tsa.ardl import ARDL
 import matplotlib.pyplot as plt
+import statsmodels.api as sm
+from statsmodels.tsa.ardl import ardl_select_order
 
 st.title("Multivariate Econometric Analysis")
 
@@ -16,46 +16,55 @@ if uploaded_file is not None:
     st.subheader("Data Preview")
     st.write(df.head())
 
-    # Handle date column if exists
+    # Handle datetime index if available
     if 'date' in df.columns:
         df['date'] = pd.to_datetime(df['date'])
         df.set_index('date', inplace=True)
 
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    
+
     if len(numeric_cols) < 2:
-        st.warning("Need at least 2 numeric variables for multivariate analysis.")
+        st.warning("You need at least 2 numeric columns.")
     else:
         ycol = st.selectbox("Select dependent variable (Y)", numeric_cols)
-        xcols = st.multiselect("Select independent variables (X)", [col for col in numeric_cols if col != ycol])
+        xcols = st.multiselect("Select independent variable(s) (X)", [col for col in numeric_cols if col != ycol])
 
         if ycol and xcols:
-            # Drop NA
+            # Subset and clean data
             data = df[[ycol] + xcols].dropna()
-            st.write(f"Using {len(data)} observations.")
 
-            # Add constant
-            data_with_const = sm.add_constant(data[xcols])
-            model = sm.OLS(data[ycol], data_with_const).fit()
+            st.write(f"Number of usable observations: {len(data)}")
 
-            st.subheader("OLS Regression Results")
-            st.text(model.summary())
+            # --------------------------
+            # OLS ESTIMATION
+            # --------------------------
+            st.subheader("OLS Regression")
+            X = sm.add_constant(data[xcols])
+            ols_model = sm.OLS(data[ycol], X).fit()
+            st.text(ols_model.summary())
 
-            # --- ARDL Model ---
+            # --------------------------
+            # ARDL ESTIMATION
+            # --------------------------
             st.subheader("ARDL Estimation")
+
             try:
-                y = data[ycol]
-                X = data[xcols]
+                # Use ardl_select_order to find optimal lag structure
+                ardl_selected = ardl_select_order(
+                    endog=data[ycol],
+                    exog=data[xcols],
+                    maxlag=4,
+                    ic="aic",
+                    trend="n"
+                )
 
-                # Automatically choose optimal lags (max p=4, q=2 for simplicity)
-                ardl_model = ARDL(y, X, lags=4)
-                ardl_res = ardl_model.fit()
+                ardl_model = ardl_selected.model.fit()
+                st.text("ARDL Model Summary")
+                st.text(ardl_model.summary())
 
-                st.text(ardl_res.summary())
-
-                # Plot ARDL residuals
+                # Plot residuals
                 fig, ax = plt.subplots()
-                ax.plot(ardl_res.resid)
+                ax.plot(ardl_model.resid)
                 ax.set_title("ARDL Residuals")
                 st.pyplot(fig)
 
