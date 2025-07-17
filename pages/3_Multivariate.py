@@ -1,80 +1,49 @@
 import streamlit as st
 import pandas as pd
 import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-from statsmodels.stats.stattools import durbin_watson
-from statsmodels.stats.diagnostic import het_breuschpagan
-from statsmodels.tsa.stattools import adfuller, coint
+import seaborn as sns
+import matplotlib.pyplot as plt
 from statsmodels.tsa.ardl import ARDL
-import itertools
 
-st.title("Multivariate Econometric Analysis")
+st.set_page_config(page_title="Multivariate Analysis", layout="wide")
 
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+st.title("📊 Multivariate Econometric Analysis")
 
-if uploaded_file:
+uploaded_file = st.file_uploader("Upload your multivariate dataset (CSV format):", type="csv")
+
+if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
-    df.dropna(inplace=True)
+    st.success("File uploaded successfully!")
+    st.write("### Data Preview")
+    st.dataframe(df.head())
 
-    st.subheader("Data Preview")
-    st.write(df.head())
+    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
 
-    columns = df.columns.tolist()
-
-    ycol = st.selectbox("Select dependent variable", columns)
-    xcols = st.multiselect("Select independent variables", [col for col in columns if col != ycol])
+    ycol = st.selectbox("Select dependent variable (Y):", options=numeric_cols)
+    xcols = st.multiselect("Select independent variable(s) (X):", options=[col for col in numeric_cols if col != ycol])
 
     if ycol and xcols:
-        st.markdown("### Stationarity Tests (ADF)")
-        adf_results = {}
-        for col in [ycol] + xcols:
-            adf_stat, pval, _, _, _, _ = adfuller(df[col])
-            adf_results[col] = {"ADF Statistic": adf_stat, "p-value": pval}
-        st.write(pd.DataFrame(adf_results).T)
-
-        st.markdown("### OLS Regression")
         X = df[xcols]
-        X = sm.add_constant(X)
         y = df[ycol]
-        ols_model = sm.OLS(y, X).fit()
+
+        st.subheader("1. OLS Regression Results")
+        X_const = sm.add_constant(X)
+        ols_model = sm.OLS(y, X_const).fit()
         st.text(ols_model.summary())
 
-        st.markdown("### Variance Inflation Factor (VIF)")
-        vif_data = pd.DataFrame()
-        vif_data["Feature"] = X.columns
-        vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
-        st.write(vif_data)
+        st.subheader("2. Correlation Matrix")
+        corr = df[[ycol] + xcols].corr()
+        fig, ax = plt.subplots()
+        sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
+        st.pyplot(fig)
 
-        st.markdown("### Durbin-Watson Test")
-        dw_stat = durbin_watson(ols_model.resid)
-        st.write(f"Durbin-Watson statistic: {dw_stat:.4f}")
-
-        st.markdown("### Breusch-Pagan Test")
-        bp_test = het_breuschpagan(ols_model.resid, X)
-        labels = ["LM Stat", "LM p-value", "F Stat", "F p-value"]
-        st.write(dict(zip(labels, bp_test)))
-
-        st.markdown("### Cointegration Test (Engle-Granger)")
-        if len(xcols) == 1:
-            coint_stat, pval, _ = coint(df[ycol], df[xcols[0]])
-            st.write({"Test Stat": coint_stat, "p-value": pval})
-        else:
-            st.info("Engle-Granger test supports only one regressor.")
-
-        st.markdown("### ARDL Estimation")
-        max_lag_y = st.number_input("Max lags for dependent variable", min_value=1, max_value=10, value=1)
-        max_lags_x = {x: st.number_input(f"Max lags for {x}", min_value=0, max_value=10, value=1) for x in xcols}
-
-    from statsmodels.tsa.ardl import ARDL
-
-try:
-    # Auto ARDL formula (simplified, for one dependent and multiple exogenous)
-    ardl_formula = f"{ycol} ~ " + " + ".join([f"L1.{col}" for col in xcols])
-    ardl_model = ARDL.from_formula(ardl_formula, data=df, lags=2)
-    ardl_res = ardl_model.fit()
-    st.subheader("ARDL Model Summary")
-    st.text(ardl_res.summary())
-except Exception as e:
-    st.warning(f"ARDL estimation failed: {e}")
-
+        st.subheader("3. ARDL Model (AutoRegressive Distributed Lag)")
+        try:
+            ardl_formula = f"{ycol} ~ " + " + ".join([f"L1.{col}" for col in xcols])
+            ardl_model = ARDL.from_formula(ardl_formula, data=df, lags=2)
+            ardl_res = ardl_model.fit()
+            st.text(ardl_res.summary())
+        except Exception as e:
+            st.warning(f"ARDL estimation failed: {e}")
+else:
+    st.info("Please upload a dataset to begin.")
