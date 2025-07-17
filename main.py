@@ -1,3 +1,8 @@
+from PIL import Image
+
+logo = Image.open("logo.png")
+st.sidebar.image(logo, width=200)
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -30,6 +35,60 @@ body {
 }
 .stButton>button:hover {
     background-color: #005580;
+}
+</style>
+""", unsafe_allow_html=True)
+st.markdown("""
+<style>
+/* Import Google font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+/* Apply the font */
+html, body, [class*="css"] {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f6f9fc;
+    color: #1a1a1a;
+}
+
+/* Sidebar style */
+.sidebar .sidebar-content {
+    background-color: #003366;
+    padding: 20px;
+    color: white;
+}
+
+/* Heading styling */
+h1, h2, h3 {
+    color: #003366;
+}
+
+/* Button styling */
+.stButton > button {
+    background-color: #0072b1;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.stButton > button:hover {
+    background-color: #005a8c;
+}
+
+/* Navbar styling */
+.navbar {
+    background-color: #003366;
+    padding: 15px;
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+}
+.navbar a {
+    color: white;
+    margin-left: 20px;
+    text-decoration: none;
 }
 </style>
 """, unsafe_allow_html=True)
